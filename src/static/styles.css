@@ -164,6 +164,28 @@ button:hover {
   background-color: #3949ab;
 }
 
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+code {
+  background-color: #eef;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.attendance-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.attendance-list li {
+  padding: 4px 0;
+}
+
 .message {
   margin-top: 20px;
   padding: 10px;

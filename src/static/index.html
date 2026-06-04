@@ -39,6 +39,31 @@
         </form>
         <div id="message" class="hidden"></div>
       </section>
+
+      <section id="attendance-container">
+        <h3>Attendance Check-In / Check-Out</h3>
+        <form id="attendance-form">
+          <div class="form-group">
+            <label for="attendance-email">Student Email:</label>
+            <input type="email" id="attendance-email" required placeholder="your-email@mergington.edu" />
+          </div>
+          <div class="form-group">
+            <label for="attendance-activity">Select Activity:</label>
+            <select id="attendance-activity" required>
+              <option value="">-- Select an activity --</option>
+              <!-- Activity options will be loaded here -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="attendance-token">QR Token:</label>
+            <input type="text" id="attendance-token" required placeholder="Enter activity QR token" />
+          </div>
+          <div class="button-group">
+            <button type="button" id="checkin-button">Check In</button>
+            <button type="button" id="checkout-button">Check Out</button>
+          </div>
+        </form>
+      </section>
     </main>
 
     <footer>

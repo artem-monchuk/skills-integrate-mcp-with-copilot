@@ -1,7 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
+  const attendanceActivitySelect = document.getElementById("attendance-activity");
   const signupForm = document.getElementById("signup-form");
+  const attendanceEmailInput = document.getElementById("attendance-email");
+  const attendanceTokenInput = document.getElementById("attendance-token");
+  const checkinButton = document.getElementById("checkin-button");
+  const checkoutButton = document.getElementById("checkout-button");
   const messageDiv = document.getElementById("message");
 
   // Function to fetch activities from API
@@ -10,18 +15,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and selects
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+      attendanceActivitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft =
-          details.max_participants - details.participants.length;
+        const spotsLeft = details.max_participants - details.participants.length;
 
-        // Create participants HTML with delete icons instead of bullet points
         const participantsHTML =
           details.participants.length > 0
             ? `<div class="participants-section">
@@ -37,26 +42,46 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>`
             : `<p><em>No participants yet</em></p>`;
 
+        const attendanceHTML =
+          details.attendance && details.attendance.length > 0
+            ? `<div class="attendance-section">
+                <h5>Attendance history:</h5>
+                <ul class="attendance-list">
+                  ${details.attendance
+                    .map(
+                      (entry) =>
+                        `<li><strong>${entry.email}</strong> ${entry.action === "checkin" ? "checked in" : "checked out"} at ${new Date(
+                          entry.timestamp
+                        ).toLocaleString()}</li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>`
+            : `<p><em>No attendance recorded yet</em></p>`;
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>QR Token:</strong> <code>${details.qr_token}</code></p>
           <div class="participants-container">
             ${participantsHTML}
+          </div>
+          <div class="attendance-records">
+            ${attendanceHTML}
           </div>
         `;
 
         activitiesList.appendChild(activityCard);
 
-        // Add option to select dropdown
         const option = document.createElement("option");
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+        attendanceActivitySelect.appendChild(option.cloneNode(true));
       });
 
-      // Add event listeners to delete buttons
       document.querySelectorAll(".delete-btn").forEach((button) => {
         button.addEventListener("click", handleUnregister);
       });
@@ -86,31 +111,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
-
-        // Refresh activities list to show updated participants
+        showMessage(result.message, "success");
         fetchActivities();
       } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        showMessage(result.detail || "An error occurred", "error");
       }
-
-      messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
     } catch (error) {
-      messageDiv.textContent = "Failed to unregister. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
+      showMessage("Failed to unregister. Please try again.", "error");
       console.error("Error unregistering:", error);
     }
   }
 
-  // Handle form submission
+  // Handle sign up
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -130,30 +142,65 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
+        showMessage(result.message, "success");
         signupForm.reset();
-
-        // Refresh activities list to show updated participants
         fetchActivities();
       } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        showMessage(result.detail || "An error occurred", "error");
       }
-
-      messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
     } catch (error) {
-      messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
+      showMessage("Failed to sign up. Please try again.", "error");
       console.error("Error signing up:", error);
     }
   });
+
+  async function handleAttendance(action) {
+    const email = attendanceEmailInput.value;
+    const activity = attendanceActivitySelect.value;
+    const token = attendanceTokenInput.value;
+
+    if (!activity) {
+      showMessage("Please select an activity for attendance.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activity)}/${action}?email=${encodeURIComponent(
+          email
+        )}&token=${encodeURIComponent(token)}`,
+        {
+          method: "POST",
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showMessage(result.message, "success");
+        attendanceTokenInput.value = "";
+        fetchActivities();
+      } else {
+        showMessage(result.detail || "An error occurred", "error");
+      }
+    } catch (error) {
+      showMessage("Attendance request failed. Please try again.", "error");
+      console.error("Error submitting attendance:", error);
+    }
+  }
+
+  checkinButton.addEventListener("click", () => handleAttendance("checkin"));
+  checkoutButton.addEventListener("click", () => handleAttendance("checkout"));
+
+  function showMessage(text, type) {
+    messageDiv.textContent = text;
+    messageDiv.className = type;
+    messageDiv.classList.remove("hidden");
+
+    setTimeout(() => {
+      messageDiv.classList.add("hidden");
+    }, 5000);
+  }
 
   // Initialize app
   fetchActivities();

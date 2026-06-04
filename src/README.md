@@ -29,8 +29,10 @@ A super simple FastAPI application that allows students to view and sign up for 
 
 | Method | Endpoint                                                          | Description                                                         |
 | ------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
-| GET    | `/activities`                                                     | Get all activities with their details and current participant count |
+| GET    | `/activities`                                                     | Get all activities with their details, current participant count, QR token, and attendance history |
 | POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
+| POST   | `/activities/{activity_name}/checkin?email=student@mergington.edu&token=...` | Check a student in with a valid activity QR token                  |
+| POST   | `/activities/{activity_name}/checkout?email=student@mergington.edu&token=...` | Check a student out with a valid activity QR token                 |
 
 ## Data Model
 
